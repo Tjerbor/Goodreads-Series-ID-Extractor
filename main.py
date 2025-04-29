@@ -1,11 +1,11 @@
 """
 Usage:
-    remix.audio_dl.py
-    remix.audio_dl.py <URL>
-    remix.audio_dl.py -h | --help
-    remix.audio_dl.py --version
+    main.py
+    main.py <URL>
+    main.py -h | --help
+    main.py --version
 Options:
-    No argument                     Will use the clipboard string as URL
+    No argument                     Will use the clipboard string as URL.
 
     -h --help                       Show this screen.
     --version                       Show version.
@@ -13,11 +13,9 @@ Options:
 import json
 import logging
 import sys
-from typing import Any
 from urllib.request import urlopen
 
 import pyperclip
-import requests
 from bs4 import BeautifulSoup
 from docopt import docopt
 
@@ -36,17 +34,25 @@ def main():
         url = pyperclip.paste()
 
     book_ids = get_book_ids(url)
+    formatted_ids = list(map(lambda book_id: f'goodreads:{book_id}', book_ids))
 
-    ISBNs = list(map(lambda book_id: get_book_ISBN(f'https://www.goodreads.com/book/show/{book_id}'), book_ids))
-    print('\n'.join(ISBNs))
+    clipboard_string = '\n'.join(formatted_ids)
+    pyperclip.copy(clipboard_string)
+    print(clipboard_string)
 
 
-def get_book_ids(url: str) -> map:
-    source = urlopen(url)
-    soup = BeautifulSoup(source, 'html.parser')
-    books = soup.find_all('div', {'class': 'listWithDividers__item'})
-    book_ids = list(map(lambda item: item.find('a', {'data-reactid': True})['href'].removeprefix('/book/show/'), books))
-    logging.info(f'Book IDs: {', '.join(book_ids)}')
+def get_book_ids(url: str) -> list:
+    try:
+        source = urlopen(url)
+        soup = BeautifulSoup(source, 'html.parser')
+        books = soup.find_all('div', {'class': 'listWithDividers__item'})
+        book_ids = list(
+            map(lambda item: item.find('a', {'data-reactid': True})['href'].removeprefix('/book/show/'), books))
+        logging.info(f'Book IDs: [{', '.join(book_ids)}]')
+    except Exception as e:
+        print(f'Invalid URL: {url}')
+        sys.exit(1)
+
     return book_ids
 
 
